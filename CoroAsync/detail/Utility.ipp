@@ -1,7 +1,5 @@
 ﻿# pragma once
 
-# include <tuple>
-# include <type_traits>
 # include <utility>
 # include <cstddef>
 
@@ -41,9 +39,9 @@ namespace cra
 	}
 
 	template <class... Types>
-	auto WhenAll(Task<Types>... tasks) -> Task<decltype(detail::GetAll(std::move(tasks)...))>
+	Task<detail::WhenAllResult_t<Types...>> WhenAll(Task<Types>... tasks)
 	{
-		while (not tasks.isReady() || ...)
+		while ((not tasks.isReady() || ...))
 		{
 			co_await 0;
 		}
@@ -53,7 +51,7 @@ namespace cra
 	template <class... Types>
 	Task<std::variant<Task<Types>&...>> WhenAny(Task<Types>&... tasks)
 	{
-		while (not tasks.isReady() && ...)
+		while ((not tasks.isReady() && ...))
 		{
 			co_await 0;
 		}
@@ -63,7 +61,7 @@ namespace cra
 	template <class... Types>
 	Task<std::variant<Task<Types>...>> WhenAny(Task<Types>... tasks)
 	{
-		while (not tasks.isReady() && ...)
+		while ((not tasks.isReady() && ...))
 		{
 			co_await 0;
 		}
