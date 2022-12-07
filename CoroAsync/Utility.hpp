@@ -13,7 +13,7 @@ namespace cra
 		template <class... Types>
 		struct WhenAllResult;
 		template <class... Types>
-		using WhenAllResult_t = WhenAllResult<Types...>::type;
+		using WhenAllResult_t = typename WhenAllResult<Types...>::type;
 		template <>
 		struct WhenAllResult<> { using type = std::tuple<>; };
 		template <class... Types>
