@@ -12,7 +12,7 @@ namespace cra
 	/// @remark コルーチンの戻り値に指定して使用します。
 	/// @tparam Type 非同期処理するコルーチンの戻り値の型
 	template <class Type = void>
-	class Task
+	class [[nodiscard]] Task
 	{
 	public:
 		/// @brief 非同期処理の結果の型
