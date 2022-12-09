@@ -11,6 +11,8 @@ namespace cra
 		{
 			return std::tuple<>{};
 		}
+		template <class T, class... Types>
+		auto GetAll(Task<T>& task, Task<Types>&... tasks);
 		template <class... Types>
 		auto GetAll(Task<>&, Task<Types>&... tasks)
 		{
