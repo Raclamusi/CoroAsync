@@ -78,7 +78,7 @@ namespace cra
 		/// @return true
 		bool await_ready() const noexcept;
 
-		/// @brief タスクをタスク待ちキューに追加します。
+		/// @brief 何もしません。
 		/// @remark co_await 式のオペランドに渡したときに呼び出されます。
 		void await_suspend(std::coroutine_handle<>) const noexcept;
 

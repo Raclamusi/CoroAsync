@@ -122,7 +122,6 @@ namespace cra
 	template <class Type>
 	inline void Task<Type>::await_suspend(std::coroutine_handle<>) const noexcept
 	{
-		detail::TaskQueue::Wait(coro);
 	}
 
 	template <class Type>
@@ -160,7 +159,7 @@ namespace cra
 		std::suspend_always await_transform(const std::chrono::duration<Rep, Period>& relTime)
 		{
 			if (relTime.count() > 0) {
-				detail::TaskQueue::SleepFor(relTime);
+				detail::TaskQueue::SleepFor(Handle::from_promise(*this), relTime);
 			}
 			return std::suspend_always{};
 		}
@@ -171,6 +170,7 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>& task)
 		{
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
 # ifdef __GNUC__
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
@@ -181,6 +181,7 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>&& task)
 		{
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
 # ifdef __GNUC__
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };
@@ -222,7 +223,7 @@ namespace cra
 		std::suspend_always await_transform(const std::chrono::duration<Rep, Period>& relTime)
 		{
 			if (relTime.count() > 0) {
-				detail::TaskQueue::SleepFor(relTime);
+				detail::TaskQueue::SleepFor(Handle::from_promise(*this), relTime);
 			}
 			return std::suspend_always{};
 		}
@@ -233,6 +234,7 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>& task)
 		{
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
 # ifdef __GNUC__
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
@@ -243,6 +245,7 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>&& task)
 		{
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
 # ifdef __GNUC__
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };

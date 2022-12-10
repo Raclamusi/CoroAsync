@@ -9,6 +9,7 @@
 # include <utility>
 # include <initializer_list>
 # include <algorithm>
+# include <cstdint>
 
 namespace cra
 {
@@ -29,14 +30,17 @@ namespace cra
 
 			// 実行中のタスクのスリープ時間を設定
 			template <class Rep, class Period>
-			static void SleepFor(const std::chrono::duration<Rep, Period>& relTime)
+			static void SleepFor(Handle h, const std::chrono::duration<Rep, Period>& relTime)
 			{
-				sleepTime = Clock::now() + relTime;
+				asleep = true;
+				sleepingTasks.emplace(Clock::now() + relTime, h);
 			}
 
-			static void Wait(Handle h)
+			static void Wait(Handle h, Handle taskToWait)
 			{
-				taskToWait = h;
+				asleep = true;
+				taskWaitingTasks.emplace(taskToWait, h);
+				++taskWaitingCount[h];
 			}
 
 			// タスクキューから削除
@@ -75,38 +79,28 @@ namespace cra
 					{
 						auto [first, last] = taskWaitingTasks.equal_range(handle);
 						taskWaitingTasks.erase(first, last);
+						taskWaitingCount.erase(handle);
 						continue;
 					}
+					asleep = false;
 					handle.resume();
 					if (handle.done())
 					{
 						auto [first, last] = taskWaitingTasks.equal_range(handle);
 						for (auto it = first; it != last; ++it)
 						{
-							if (it->second)
+							--taskWaitingCount[it->second];
+							if (it->second && taskWaitingCount[it->second] == 0)
 							{
 								tasks.emplace_back(it->second, false);
 							}
 						}
 						taskWaitingTasks.erase(first, last);
 					}
-					else
+					else if (not asleep)
 					{
-						if (sleepTime != TimePoint{})
-						{
-							sleepingTasks.emplace(sleepTime, handle);
-						}
-						else if (taskToWait)
-						{
-							taskWaitingTasks.emplace(taskToWait, handle);
-						}
-						else
-						{
-							tasks.emplace_back(handle, false);
-						}
+						tasks.emplace_back(handle, false);
 					}
-					sleepTime = TimePoint{};
-					taskToWait = nullptr;
 					CheckForResumeFromSleep(absTime);
 					if (Clock::now() >= absTime)
 					{
@@ -118,9 +112,9 @@ namespace cra
 		private:
 			inline static std::deque<std::pair<Handle, bool>> tasks;
 			inline static std::multimap<TimePoint, Handle> sleepingTasks;
-			inline static TimePoint sleepTime;
 			inline static std::multimap<Handle, Handle> taskWaitingTasks;
-			inline static Handle taskToWait;
+			inline static std::map<Handle, std::uint32_t> taskWaitingCount;
+			inline static bool asleep = false;
 
 			// スリープの終了のチェック
 			static void CheckForResumeFromSleep(const TimePoint& limit)
