@@ -7,45 +7,47 @@ namespace cra
 {
 	namespace detail
 	{
-# ifdef __GNUC__
+	# ifdef __GNUC__
+
 		// GCC のバグ対策
 		template <class Type>
 		struct AwaiterWrapper
 		{
-			Type awaiter;
+			Type m_awaiter;
 			decltype(auto) await_ready()
-				noexcept(noexcept(awaiter.await_ready()))
+				noexcept(noexcept(m_awaiter.await_ready()))
 			{
-				return awaiter.await_ready();
+				return m_awaiter.await_ready();
 			}
 			decltype(auto) await_suspend(std::coroutine_handle<> h)
-				noexcept(noexcept(awaiter.await_suspend(h)))
+				noexcept(noexcept(m_awaiter.await_suspend(h)))
 			{
-				return awaiter.await_suspend(h);
+				return m_awaiter.await_suspend(h);
 			}
 			decltype(auto) await_resume()
-				noexcept(noexcept(awaiter.await_resume()))
+				noexcept(noexcept(m_awaiter.await_resume()))
 			{
-				return awaiter.await_resume();
+				return m_awaiter.await_resume();
 			}
 		};
-# endif
+
+	# endif
 	}
 
 	template <class Type>
 	inline Task<Type>::Task() noexcept
-		: coro{ nullptr }, result{} {}
+		: m_coro{ nullptr }, m_result{} {}
 
 	template <class Type>
 	inline Task<Type>::Task(Handle h, std::future<Type> f) noexcept
-		: coro{ h }, result{ std::move(f) }
+		: m_coro{ h }, m_result{ std::move(f) }
 	{
-		detail::TaskQueue::Push(coro);
+		detail::TaskQueue::Push(m_coro);
 	}
 
 	template <class Type>
 	inline Task<Type>::Task(Task&& other) noexcept
-		: coro{ std::exchange(other.coro, nullptr) }, result{ std::move(other.result) } {}
+		: m_coro{ std::exchange(other.m_coro, nullptr) }, m_result{ std::move(other.m_result) } {}
 
 	template <class Type>
 	inline Task<Type>::~Task()
@@ -57,28 +59,28 @@ namespace cra
 	inline Task<Type>& Task<Type>::operator =(Task&& other) noexcept
 	{
 		destroy();
-		coro = std::exchange(other.coro, nullptr);
-		result = std::move(other.result);
+		m_coro = std::exchange(other.m_coro, nullptr);
+		m_result = std::move(other.m_result);
 		return *this;
 	}
 
 	template <class Type>
 	inline bool Task<Type>::isValid() const noexcept
 	{
-		return coro && result.valid();
+		return m_coro && m_result.valid();
 	}
 
 	template <class Type>
 	inline bool Task<Type>::isReady() const noexcept
 	{
-		return isValid() && coro.done();
+		return isValid() && m_coro.done();
 	}
 
 	template <class Type>
 	inline Type Task<Type>::get()
 	{
 		wait();
-		return result.get();
+		return m_result.get();
 	}
 
 	template <class Type>
@@ -98,18 +100,18 @@ namespace cra
 	template <class Clock, class Duration>
 	inline std::future_status Task<Type>::wait_until(const std::chrono::time_point<Clock, Duration>& absTime)
 	{
-		detail::TaskQueue::RunUntil(coro, absTime);
-		return coro.done() ? std::future_status::ready : std::future_status::timeout;
+		detail::TaskQueue::RunUntil(m_coro, absTime);
+		return m_coro.done() ? std::future_status::ready : std::future_status::timeout;
 	}
 
 	template <class Type>
 	inline void Task<Type>::destroy() noexcept
 	{
-		if (coro)
+		if (m_coro)
 		{
-			detail::TaskQueue::Remove(coro);
-			coro.destroy();
-			coro = nullptr;
+			detail::TaskQueue::Remove(m_coro);
+			m_coro.destroy();
+			m_coro = nullptr;
 		}
 	}
 
@@ -136,7 +138,7 @@ namespace cra
 	public:
 		Task get_return_object()
 		{
-			return Task{ Handle::from_promise(*this), result.get_future() };
+			return Task{ Handle::from_promise(*this), m_result.get_future() };
 		}
 		std::suspend_always initial_suspend() noexcept
 		{
@@ -148,7 +150,7 @@ namespace cra
 		}
 		void return_value(Type value)
 		{
-			this->result.set_value(std::forward<Type>(value));
+			this->m_result.set_value(std::forward<Type>(value));
 		}
 		void unhandled_exception()
 		{
@@ -170,28 +172,34 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>& task)
 		{
-			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
-# ifdef __GNUC__
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.m_coro);
+		# ifdef __GNUC__
+
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
-# else
+		# else
+
 			return task;
-# endif
+
+		# endif
 		}
 		template <class U>
 		decltype(auto) await_transform(Task<U>&& task)
 		{
-			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
-# ifdef __GNUC__
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.m_coro);
+		# ifdef __GNUC__
+
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };
-# else
+		# else
+
 			return std::move(task);
-# endif
+
+		# endif
 		}
 
 	private:
-		std::promise<Type> result;
+		std::promise<Type> m_result;
 	};
 
 	template <>
@@ -200,7 +208,7 @@ namespace cra
 	public:
 		Task<void> get_return_object()
 		{
-			return Task{ Handle::from_promise(*this), result.get_future() };
+			return Task{ Handle::from_promise(*this), m_result.get_future() };
 		}
 		std::suspend_always initial_suspend() noexcept
 		{
@@ -212,7 +220,7 @@ namespace cra
 		}
 		void return_void()
 		{
-			result.set_value();
+			m_result.set_value();
 		}
 		void unhandled_exception()
 		{
@@ -234,27 +242,33 @@ namespace cra
 		template <class U>
 		decltype(auto) await_transform(Task<U>& task)
 		{
-			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
-# ifdef __GNUC__
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.m_coro);
+		# ifdef __GNUC__
+
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
-# else
+		# else
+
 			return task;
-# endif
+
+		# endif
 		}
 		template <class U>
 		decltype(auto) await_transform(Task<U>&& task)
 		{
-			detail::TaskQueue::Wait(Handle::from_promise(*this), task.coro);
-# ifdef __GNUC__
+			detail::TaskQueue::Wait(Handle::from_promise(*this), task.m_coro);
+		# ifdef __GNUC__
+
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };
-# else
+		# else
+
 			return std::move(task);
-# endif
+
+		# endif
 		}
 
 	private:
-		std::promise<void> result;
+		std::promise<void> m_result;
 	};
 }

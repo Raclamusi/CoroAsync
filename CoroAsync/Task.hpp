@@ -92,8 +92,8 @@ namespace cra
 	private:
 		using Handle = std::coroutine_handle<promise_type>;
 
-		Handle coro;
-		std::future<Type> result;
+		Handle m_coro;
+		std::future<Type> m_result;
 
 		[[nodiscard]]
 		Task(Handle h, std::future<Type> f) noexcept;
