@@ -24,7 +24,7 @@ namespace cra
 
 		/// @brief タスクの管理に使用されるハンドル型
 		using Handle = std::coroutine_handle<>;
-		
+
 		/// @brief 相対時間で期限を指定して、タスクキューのタスクを実行します。
 		/// @param relTime 相対時間の期限
 		template <class Rep, class Period>
