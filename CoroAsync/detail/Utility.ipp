@@ -1,8 +1,5 @@
 ﻿# pragma once
 
-# include <utility>
-# include <cstddef>
-
 namespace cra
 {
 	namespace detail

@@ -1,26 +1,15 @@
 ﻿# pragma once
 
-# include <coroutine>
-# include <deque>
-# include <set>
-# include <map>
-# include <chrono>
-# include <thread>
-# include <utility>
-# include <initializer_list>
-# include <algorithm>
-# include <cstdint>
-
 namespace cra
 {
 	namespace detail
 	{
-		class TaskQueue
+		class TaskQueueImpl
 		{
 		public:
-			using Clock = std::chrono::steady_clock;
-			using TimePoint = Clock::time_point;
-			using Handle = std::coroutine_handle<>;
+			using Clock = TaskQueue::Clock;
+			using TimePoint = TaskQueue::TimePoint;
+			using Handle = TaskQueue::Handle;
 
 			// タスクキューに追加
 			static void Push(Handle h)
@@ -71,7 +60,7 @@ namespace cra
 			static void RunUntil(Handle coro, const std::chrono::time_point<Clock, Duration>& absTime)
 			{
 				CheckForResumeFromSleep(absTime);
-				while (tasks.size() && not coro.done())
+				while (tasks.size() && not (coro && coro.done()))
 				{
 					auto [handle, removed] = tasks.front();
 					tasks.pop_front();
@@ -139,5 +128,20 @@ namespace cra
 				}
 			}
 		};
+	}
+
+	namespace TaskQueue
+	{
+		template <class Rep, class Period>
+		void RunFor(const std::chrono::duration<Rep, Period>& relTime)
+		{
+			RunUntil(Clock::now() + relTime);
+		}
+
+		template <class Clock, class Duration>
+		void RunUntil(const std::chrono::time_point<Clock, Duration>& absTime)
+		{
+			detail::TaskQueueImpl::RunUntil(nullptr, absTime);
+		}
 	}
 }
