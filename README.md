@@ -89,7 +89,7 @@ CoroAsync はヘッダオンリーなので、インクルードするだけで�
 
 ## サンプル
 
-Wandbox でサンプルを試す: https://wandbox.org/permlink/cgjhFwdhQq8MiHRG
+Wandbox でサンプルを試す: https://wandbox.org/permlink/qEg1Vyl1TiD5Xix6
 
 Siv3D for Web のサンプルを見る: https://raclamusi.github.io/CoroAsync/SampleForSiv3DForWeb.html
 

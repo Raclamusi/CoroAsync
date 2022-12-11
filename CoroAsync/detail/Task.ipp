@@ -174,6 +174,7 @@ namespace cra
 
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
+
 		# else
 
 			return task;
@@ -188,6 +189,7 @@ namespace cra
 
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };
+
 		# else
 
 			return std::move(task);
@@ -244,6 +246,7 @@ namespace cra
 
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&>{ task };
+
 		# else
 
 			return task;
@@ -258,6 +261,7 @@ namespace cra
 
 			// GCC のバグ対策
 			return detail::AwaiterWrapper<Task<U>&&>{ std::move(task) };
+
 		# else
 
 			return std::move(task);
